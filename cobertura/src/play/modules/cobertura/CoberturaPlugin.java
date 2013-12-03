@@ -33,6 +33,7 @@ import net.sourceforge.cobertura.coveragedata.CoverageDataFileHandler;
 import net.sourceforge.cobertura.coveragedata.ProjectData;
 import net.sourceforge.cobertura.instrument.ClassInstrumenter;
 import net.sourceforge.cobertura.util.FileLocker;
+import net.sourceforge.cobertura.util.IOUtil;
 
 import org.apache.oro.text.GlobCompiler;
 import org.apache.oro.text.regex.MalformedPatternException;
@@ -325,13 +326,15 @@ public class CoberturaPlugin extends PlayPlugin {
 			cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 			cv = new ClassInstrumenter(projectData, cw, ignoreRegexes, ignoreBranchesRegexes);
 			cr.accept(cv, 0);
+            
+			// save back to class representation in Play!
+			applicationClass.enhancedByteCode = cw.toByteArray();
 		} catch (Throwable t) {
 			Logger.error("Unable to instrument class " + applicationClass.name + " (" + t + ")", t);
 			return;
+		} finally {
+			IOUtil.closeInputStream(inputStream);
 		}
-
-		// save back to class representation in Play!
-		applicationClass.enhancedByteCode = cw.toByteArray();
 
 		// record this enhanced class as an unsaved change
 		unsavedChanges++;
